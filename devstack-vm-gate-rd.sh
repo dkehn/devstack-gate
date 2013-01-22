@@ -28,8 +28,6 @@ TRACE="no"
 DEV_BASE="/home/stack/reddwarf"
 export DEVSTACK_DIR="$DEV_BASE/devstack"
 export REDSTACK_DIR="$DEV_BASE/reddwarf/reddwarf-integration"
-export REDDWARF_INTEGRATION_CONF_DIR=/tmp/reddwarf-integration/
-
 
 # NOTE: Tese are normally set in devstack-vm-gate-wrap.sh
 export DEVSTACK_GATE_REDDWARF=${DEVSTACK_GATE_REDDWARF:-1}
@@ -110,18 +108,16 @@ if [ "$DEVSTACK_GATE_REDDWARF" -eq "1" ]; then
     REDDWARF_INTEGRATION_BRANCH=master
     REDDWARF_INTEGRATION_REPO=${GIT_BASE}/stackforge/reddwarf-integration.git
     REDDWARFCLIENT_BRANCH=master
-    REDDWARF_INTEGRATION_CONF_DIR=/tmp/reddwarf-integration/
     
-
     git_clone $REDDWARFCLIENT_REPO $REDDWARFCLIENT_DIR $REDDWARFCLIENT_BRANCH
     git_clone $REDDWARF_REPO $REDDWARF_DIR $REDDWARF_BRANCH
 
     # now to get the local.sh file from the reddwarf-integration repo
-    if [ -d $REDDWARF_INTEGRATION_CONF_DIR ]; then
-	rm -rf $REDDWARF_INTEGRATION_CONF_DIR
+    if [ -d $REDSTACK_DIR ]; then
+	rm -rf $REDSTACK_DIR
     fi
-    git_clone $REDDWARF_INTEGRATION_REPO $REDDWARF_INTEGRATION_CONF_DIR "refs/changes/50/19150/3"
-    cp $REDDWARF_INTEGRATION_CONF_DIR/scripts/local.sh /$BASE/new/devstack
+    git_clone $REDDWARF_INTEGRATION_REPO $REDSTACK_DIR "refs/changes/50/19150/3"
+    cp $REDSTACK_DIR/scripts/local.sh /$BASE/new/devstack
     cd "$cdir"
 fi
 
@@ -266,10 +262,12 @@ fi
 if [ "$DEVSTACK_GATE_REDDWARF" -eq "1" ]; then
     echo "Configuring reddwarf for redstack testing"
     cd $BASE/new/devstack
-    sudo -H -u stack $DEV_BASE/gate-t/testing_configure_reddwarf.sh --add-users
+    sudo -H -u stack $REDSTACK_DIR/scripts/redstack post-devstack mysql
+
     # TODO - this is where the call to the redstack testing should be 
     #        implemented.
     echo "Running redstack tests suite."
+    sudo -H -u stack $REDSTACK_DIR/scripts/redstack simple-tests
 
     echo "Cleanup, post reddwarf testing"
     sudo -H -u stack $DEV_BASE/gate-t/testing_configure_reddwarf.sh --del-users
